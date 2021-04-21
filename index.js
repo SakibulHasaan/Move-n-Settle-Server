@@ -23,6 +23,7 @@ client.connect(err => {
   const ServicesCollection = client.db(`${process.env.DB_NAME}`).collection("Services");
   const OrdersCollection = client.db(`${process.env.DB_NAME}`).collection("Orders");
   const ReviewsCollection = client.db(`${process.env.DB_NAME}`).collection("Reviews");
+  const AdminCollection = client.db(`${process.env.DB_NAME}`).collection("Admin");
   console.log("DB Connected");
 
 
@@ -51,22 +52,42 @@ client.connect(err => {
       })
   })
 
-  app.delete('/deleteOrder/:id', (req, res) => {
-    const id = ObjectID(req.params.id);
-    OrdersCollection.findOneAndDelete({ _id: id })
-      .then(documents => {
-        res.send(documents.value);
-        console.log("item delete success ", id);
+  app.post('/order', (req, res) => {
+    const product = req.body;
+    console.log(product);
+    OrdersCollection.insertOne(product)
+      .then((result) => {
+        console.log(result);
+        res.send(result.insertedCount > 0);
+      })
+  })
+  
+  app.post('/addReview', (req, res) => {
+    const review = req.body;
+    console.log(review);
+    ReviewsCollection.insertOne(review)
+      .then((result) => {
+        console.log(result);
+        res.send(result.insertedCount > 0);
       })
   })
 
-  app.get('/orders', (req, res) => {
+  app.get('/allReviews', (req, res) => {
+    ReviewsCollection.find()
+      .toArray((err, items) => {
+        // console.log(items)
+        res.send(items);
+      })
+  });
+
+  app.get('/allOrders', (req, res) => {
     OrdersCollection.find()
       .toArray((err, items) => {
         // console.log(items)
         res.send(items);
       })
   });
+
 
   app.get('/find/:id', (req, res) => {
     const id = ObjectID(req.params.id);
@@ -98,15 +119,48 @@ client.connect(err => {
 
   });
 
-  app.post('/order', (req, res) => {
-    const product = req.body;
-    console.log(product);
-    OrdersCollection.insertOne(product)
+  app.post('/addAdmin', (req, res) => {
+    const admin = req.body;
+    AdminCollection.insertOne(admin)
       .then((result) => {
-        console.log(result);
         res.send(result.insertedCount > 0);
       })
-  })
+  });
+
+  app.get('/allAdmins', (req, res) => {
+    AdminCollection.find()
+      .toArray((err, items) => {
+        // console.log(items)
+        res.send(items);
+      })
+  });
+
+
+  app.get('/findOrder/:id', (req, res) => {
+    const id = ObjectID(req.params.id);
+    OrdersCollection.findOne({ "_id": id })
+      .then((item) => {
+        res.send([item])
+        // console.log(item)
+      })
+  });
+
+  app.patch('/updateOrderStatus/:id', (req, res) => {
+    const id = ObjectID(req.params.id);
+
+    OrdersCollection.updateOne({ "_id": id },{
+      $set: {
+        orderStatus: req.body.orderStatus
+      }
+    })
+      .then((item) => {
+        res.send(item.modifiedCount>0);
+      })
+  });
+
+
+
+
 
 });
 
